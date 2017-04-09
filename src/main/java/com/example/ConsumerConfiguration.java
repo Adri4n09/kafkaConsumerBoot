@@ -2,6 +2,8 @@ package com.example;
 
 import com.example.dao.BookDao;
 import com.example.dao.BookDaoImpl;
+import com.example.event.BookEvent;
+import com.example.event.BookEventHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.hibernate.SessionFactory;
@@ -50,7 +52,7 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
     @Value("${kafka.client.id.config}")
     private String CLIENT_ID_CONFIG;
     @Value("${kafka.books.topic}")
-    private String topicName;
+    private String booksTopicName;
 
 
     @Bean
@@ -61,8 +63,13 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
 
     @Bean
     @Scope(value = "prototype")
-    public ConsumerThread consumerThread() {
-        return new ConsumerThread(topicName);
+    public ConsumerThread booksConsumerThread() {
+        return new ConsumerThread(booksTopicName, bookEventHandler(), bookEvent());
+    }
+
+    @Bean
+    public BookEvent bookEvent() {
+        return new BookEvent();
     }
 
     @Bean
@@ -70,9 +77,9 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
     @Scope(value = "prototype")
     public List<ConsumerThread> consumerThreadList() {
         List<ConsumerThread> list = new ArrayList<>();
-        list.add(consumerThread());
-        list.add(consumerThread());
-        list.add(consumerThread());
+        list.add(booksConsumerThread());
+        list.add(booksConsumerThread());
+        list.add(booksConsumerThread());
         return list;
     }
 
@@ -119,6 +126,7 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
     }
 
     @Bean
+    @Scope("prototype")
     public BookDao bookDao() {
         BookDaoImpl bookDao = new BookDaoImpl();
         bookDao.setSessionFactory(sessionFactory().getObject());
@@ -130,6 +138,11 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
         properties.setProperty("hibernate.show_sql", "true");
         return properties;
+    }
+
+    @Bean
+    public BookEventHandler bookEventHandler() {
+        return new BookEventHandler();
     }
 
     @Bean

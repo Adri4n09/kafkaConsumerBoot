@@ -1,8 +1,7 @@
 package com.example;
 
-import com.example.dao.BookDao;
-import com.example.event.BookEvent;
-import com.example.event.OperationType;
+import com.example.event.Event;
+import com.example.event.EventHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -18,17 +17,19 @@ public class ConsumerThread implements Runnable {
     private String topicName;
     private KafkaConsumer<String, String> kafkaConsumer;
 
+    private EventHandler eventHandler;
+    private Event event;
+
     @Autowired
     private Properties properties;
 
     @Autowired
-    private BookDao bookDao;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    public ConsumerThread(String topicName) {
+    public ConsumerThread(String topicName, EventHandler eventHandler, Event event) {
         this.topicName = topicName;
+        this.eventHandler = eventHandler;
+        this.event = event;
     }
 
     @Override
@@ -40,12 +41,7 @@ public class ConsumerThread implements Runnable {
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(100);
                 for (ConsumerRecord<String, String> record : records) {
                     System.out.println("thread: " + Thread.currentThread().getId() + ", " + record.value());
-                    if (validBookEvent(record.value())) {
-                        BookEvent bookEvent = objectMapper.readValue(record.value(), BookEvent.class);
-                        if (bookEvent.getOperation() == OperationType.ADD) {
-                            bookDao.addBook(bookEvent.getBook());
-                        }
-                    }
+                    eventHandler.onEvent(objectMapper.readValue(record.value(), event.getClass()));
                 }
             }
         }catch(Exception ex){
@@ -59,11 +55,6 @@ public class ConsumerThread implements Runnable {
     public KafkaConsumer<String, String> getKafkaConsumer() {
         return kafkaConsumer;
     }
-
-    private boolean validBookEvent(String book) {
-        if (book.contains("isbn") || book.contains("title")) {
-            return true;
-        }
-        return false;
-    }
 }
+
+//TODO: add validation of event, if objectMapper throws exception consumer stops. you don't want that :).

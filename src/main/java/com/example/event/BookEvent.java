@@ -2,7 +2,7 @@ package com.example.event;
 
 import com.example.model.Book;
 
-public class BookEvent {
+public class BookEvent implements Event {
 
     private String idBookEvent;
     private OperationType operation;
