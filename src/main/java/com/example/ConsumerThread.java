@@ -40,8 +40,13 @@ public class ConsumerThread implements Runnable {
             while (true) {
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(100);
                 for (ConsumerRecord<String, String> record : records) {
-                    System.out.println("thread: " + Thread.currentThread().getId() + ", " + record.value());
-                    eventHandler.onEvent(objectMapper.readValue(record.value(), event.getClass()));
+                    if (record.value().contains("Event")) {
+                        System.out.println("thread: " + Thread.currentThread().getId() + ", " + record.value());
+                        eventHandler.onEvent(objectMapper.readValue(record.value(), event.getClass()));
+                    }
+                    else {
+                        System.out.println("thread: " + Thread.currentThread().getId() + ", " + record.value());
+                    }
                 }
             }
         }catch(Exception ex){
@@ -56,5 +61,3 @@ public class ConsumerThread implements Runnable {
         return kafkaConsumer;
     }
 }
-
-//TODO: add validation of event, if objectMapper throws exception consumer stops. you don't want that :).
