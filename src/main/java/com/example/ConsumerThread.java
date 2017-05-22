@@ -50,6 +50,7 @@ public class ConsumerThread implements Runnable {
                 }
             }
         }catch(Exception ex){
+            ex.printStackTrace();
             System.out.println("Exception caught " + ex.getMessage());
         }finally{
             kafkaConsumer.close();

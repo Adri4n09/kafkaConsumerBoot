@@ -12,6 +12,9 @@ public class MessageConsumer {
     @Qualifier("consumerList")
     private List<ConsumerThread> consumerThreadList;
 
+    @Autowired
+    private ConsumerThread consumerThread;
+
     public void recieveMessage() throws Exception{
         consumerThreadList.parallelStream().forEach(ConsumerThread::run);
         String line = "";
