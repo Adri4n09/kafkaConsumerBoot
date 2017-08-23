@@ -3,10 +3,11 @@ package com.example.configs;
 import com.example.ConsumerThread;
 import com.example.MessageConsumer;
 import com.example.dao.BookDao;
-import com.example.dao.BookDaoCouchbaseImpl;
 import com.example.dao.BookDaoImpl;
 import com.example.event.BookEvent;
-import com.example.event.BookEventHandler;
+import com.example.event.handlers.BookEventHandler;
+import com.example.event.validators.BookEventValidator;
+import com.example.event.validators.EventValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.hibernate.SessionFactory;
@@ -135,11 +136,16 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
         return bookDao;
     }
 
+//    @Bean
+//    @Scope("prototype")
+//    @Qualifier("couchbaseDao")
+//    public BookDao bookDaoCouchbase() {
+//        return new BookDaoCouchbaseImpl();
+//    }
+
     @Bean
-    @Scope("prototype")
-    @Qualifier("couchbaseDao")
-    public BookDao bookDaoCouchbase() {
-        return new BookDaoCouchbaseImpl();
+    public EventValidator bookEventValidator() {
+        return new BookEventValidator(objectMapper(), new BookEvent());
     }
 
     private Properties getHibernateProperties() {

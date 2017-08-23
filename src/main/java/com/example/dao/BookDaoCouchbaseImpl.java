@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Repository
 public class BookDaoCouchbaseImpl implements BookDao {
 
     private static final Logger logger = LoggerFactory.getLogger(BookDaoCouchbaseImpl.class);
+    private static final String SELECT_ALL_BOOKS = "Select * from books";
 
     @Autowired
     private Bucket bucket;
@@ -43,7 +43,7 @@ public class BookDaoCouchbaseImpl implements BookDao {
 
     @Override
     public List<Book> getAllBooks() {
-        N1qlQueryResult result = bucket.query(N1qlQuery.simple("Select * from books"));
+        N1qlQueryResult result = bucket.query(N1qlQuery.simple(SELECT_ALL_BOOKS));
         return result.allRows().stream().map(getN1qlQueryRowBookFunction()).collect(Collectors.toList());
     }
 

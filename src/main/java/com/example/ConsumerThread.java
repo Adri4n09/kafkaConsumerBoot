@@ -1,11 +1,13 @@
 package com.example;
 
 import com.example.event.Event;
-import com.example.event.EventHandler;
+import com.example.event.handlers.EventHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -13,6 +15,8 @@ import java.util.Properties;
 
 
 public class ConsumerThread implements Runnable {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConsumerThread.class);
 
     private String topicName;
     private KafkaConsumer<String, String> kafkaConsumer;
@@ -40,21 +44,21 @@ public class ConsumerThread implements Runnable {
             while (true) {
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(100);
                 for (ConsumerRecord<String, String> record : records) {
-                    if (record.value().contains("Event")) {
-                        System.out.println("thread: " + Thread.currentThread().getId() + ", " + record.value());
+                    if (eventHandler.validEvent(record.value())) {
+                        logger.info("thread: " + Thread.currentThread().getId() + ", " + record.value() + " - valid");
                         eventHandler.onEvent(objectMapper.readValue(record.value(), event.getClass()));
                     }
                     else {
-                        System.out.println("thread: " + Thread.currentThread().getId() + ", " + record.value());
+                        logger.info("thread: " + Thread.currentThread().getId() + ", " + record.value() + " - invalid");
                     }
                 }
             }
         }catch(Exception ex){
             ex.printStackTrace();
-            System.out.println("Exception caught " + ex.getMessage());
+            logger.warn("Exception caught " + ex.getMessage());
         }finally{
             kafkaConsumer.close();
-            System.out.println("After closing KafkaConsumer");
+            logger.info("After closing KafkaConsumer");
         }
     }
 
