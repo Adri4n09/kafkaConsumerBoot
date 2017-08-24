@@ -3,6 +3,7 @@ package com.example.configs;
 import com.example.ConsumerThread;
 import com.example.MessageConsumer;
 import com.example.dao.BookDao;
+import com.example.dao.BookDaoCouchbaseImpl;
 import com.example.dao.BookDaoImpl;
 import com.example.event.BookEvent;
 import com.example.event.handlers.BookEventHandler;
@@ -136,12 +137,12 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
         return bookDao;
     }
 
-//    @Bean
-//    @Scope("prototype")
-//    @Qualifier("couchbaseDao")
-//    public BookDao bookDaoCouchbase() {
-//        return new BookDaoCouchbaseImpl();
-//    }
+    @Bean
+    @Scope("prototype")
+    @Qualifier("couchbaseDao")
+    public BookDao bookDaoCouchbase() {
+        return new BookDaoCouchbaseImpl();
+    }
 
     @Bean
     public EventValidator bookEventValidator() {
