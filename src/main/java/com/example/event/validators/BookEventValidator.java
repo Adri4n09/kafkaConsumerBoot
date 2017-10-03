@@ -4,8 +4,6 @@ import com.example.event.Event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 @Component
 public class BookEventValidator implements EventValidator {
 
@@ -22,7 +20,7 @@ public class BookEventValidator implements EventValidator {
         try {
             objectMapper.readValue(e, event.getClass());
             return true;
-        } catch (IOException e1) {
+        } catch (Exception e1) {
         }
         return false;
     }
