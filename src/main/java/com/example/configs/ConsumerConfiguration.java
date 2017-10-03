@@ -1,18 +1,20 @@
-package com.example;
+package com.example.configs;
 
+import com.example.ConsumerThread;
+import com.example.MessageConsumer;
 import com.example.dao.BookDao;
+import com.example.dao.BookDaoCouchbaseImpl;
 import com.example.dao.BookDaoImpl;
 import com.example.event.BookEvent;
-import com.example.event.BookEventHandler;
+import com.example.event.handlers.BookEventHandler;
+import com.example.event.validators.BookEventValidator;
+import com.example.event.validators.EventValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.*;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -30,6 +32,7 @@ import java.util.Properties;
 @PropertySource({"classpath:properties/database.properties",
         "classpath:properties/kafkaConsumer.properties"})
 @EnableTransactionManagement
+@Import(CouchbaseConfig.class)
 public class ConsumerConfiguration implements TransactionManagementConfigurer {
 
     @Value("${jdbc.driverClassName}")
@@ -127,10 +130,23 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
 
     @Bean
     @Scope("prototype")
+    @Qualifier("mysqlDao")
     public BookDao bookDao() {
         BookDaoImpl bookDao = new BookDaoImpl();
         bookDao.setSessionFactory(sessionFactory().getObject());
         return bookDao;
+    }
+
+    @Bean
+    @Scope("prototype")
+    @Qualifier("couchbaseDao")
+    public BookDao bookDaoCouchbase() {
+        return new BookDaoCouchbaseImpl();
+    }
+
+    @Bean
+    public EventValidator bookEventValidator() {
+        return new BookEventValidator(objectMapper(), new BookEvent());
     }
 
     private Properties getHibernateProperties() {

@@ -13,7 +13,7 @@ public class MessageConsumer {
     private List<ConsumerThread> consumerThreadList;
 
     public void recieveMessage() throws Exception{
-        consumerThreadList.parallelStream().forEach(ConsumerThread::run);
+        consumerThreadList.parallelStream().forEach(thread -> new Thread(thread).start());
         String line = "";
         Scanner in = new Scanner(System.in);
         while (!line.equals("exit")) {
