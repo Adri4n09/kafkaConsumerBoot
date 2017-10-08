@@ -3,6 +3,8 @@ package com.example.dao;
 import com.example.model.Book;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
@@ -10,9 +12,9 @@ import java.util.List;
 
 @Repository
 @Transactional
-public class BookDaoImpl implements BookDao {
+@Profile("mysql")
+public class BookDaoMysqlImpl implements BookDao {
 
-    @Autowired
     private SessionFactory sessionFactory;
 
     @Override
@@ -47,6 +49,7 @@ public class BookDaoImpl implements BookDao {
         sessionFactory.getCurrentSession().update(book);
     }
 
+    @Autowired
     public void setSessionFactory(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }

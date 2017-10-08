@@ -2,47 +2,30 @@ package com.example.configs;
 
 import com.example.ConsumerThread;
 import com.example.MessageConsumer;
-import com.example.dao.BookDao;
-import com.example.dao.BookDaoCouchbaseImpl;
-import com.example.dao.BookDaoImpl;
 import com.example.event.BookEvent;
 import com.example.event.handlers.BookEventHandler;
+import com.example.event.handlers.EventHandler;
 import com.example.event.validators.BookEventValidator;
 import com.example.event.validators.EventValidator;
+import com.example.services.BookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.orm.hibernate4.HibernateTransactionManager;
-import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
-import org.springframework.transaction.annotation.TransactionManagementConfigurer;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 @Configuration
-@PropertySource({"classpath:properties/database.properties",
-        "classpath:properties/kafkaConsumer.properties"})
-@EnableTransactionManagement
-@Import(CouchbaseConfig.class)
-public class ConsumerConfiguration implements TransactionManagementConfigurer {
-
-    @Value("${jdbc.driverClassName}")
-    private String driver;
-    @Value("${jdbc.url}")
-    private String url;
-    @Value("${jdbc.username}")
-    private String username;
-    @Value("${jdbc.password}")
-    private String password;
+@PropertySource("classpath:properties/kafkaConsumer.properties")
+@Import({CouchbaseConfig.class, MySqlConfig.class})
+public class ConsumerConfiguration {
 
     @Value("${kafka.server}")
     private String KAFKA_SERVER;
@@ -57,6 +40,8 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
     @Value("${kafka.books.topic}")
     private String booksTopicName;
 
+    @Autowired
+    BookService bookService;
 
     @Bean
     public static PropertySourcesPlaceholderConfigurer
@@ -103,62 +88,15 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
     }
 
     @Bean
-    public DriverManagerDataSource dataSource() {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(driver);
-        dataSource.setUrl(url);
-        dataSource.setUsername(username);
-        dataSource.setPassword(password);
-        return dataSource;
-    }
-
-    @Bean
-    public LocalSessionFactoryBean sessionFactory() {
-        LocalSessionFactoryBean sessionFactoryBean = new LocalSessionFactoryBean();
-        sessionFactoryBean.setDataSource(dataSource());
-        sessionFactoryBean.setHibernateProperties(getHibernateProperties());
-        sessionFactoryBean.setMappingResources("orm/Books.hbm.xml");
-        return sessionFactoryBean;
-    }
-
-    @Bean
-    public HibernateTransactionManager transactionManager(SessionFactory sessionFactory) {
-        HibernateTransactionManager transactionManager = new HibernateTransactionManager();
-        transactionManager.setSessionFactory(sessionFactory);
-        return transactionManager;
-    }
-
-    @Bean
-    @Scope("prototype")
-    @Qualifier("mysqlDao")
-    public BookDao bookDao() {
-        BookDaoImpl bookDao = new BookDaoImpl();
-        bookDao.setSessionFactory(sessionFactory().getObject());
-        return bookDao;
-    }
-
-    @Bean
-    @Scope("prototype")
-    @Qualifier("couchbaseDao")
-    public BookDao bookDaoCouchbase() {
-        return new BookDaoCouchbaseImpl();
-    }
-
-    @Bean
     public EventValidator bookEventValidator() {
         return new BookEventValidator(objectMapper(), new BookEvent());
     }
 
-    private Properties getHibernateProperties() {
-        Properties properties = new Properties();
-        properties.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
-        properties.setProperty("hibernate.show_sql", "true");
-        return properties;
-    }
-
     @Bean
-    public BookEventHandler bookEventHandler() {
-        return new BookEventHandler();
+    public EventHandler bookEventHandler() {
+        BookEventHandler eventHandler = new BookEventHandler();
+        eventHandler.setBookService(bookService);
+        return eventHandler;
     }
 
     @Bean
@@ -166,13 +104,4 @@ public class ConsumerConfiguration implements TransactionManagementConfigurer {
         return new ObjectMapper();
     }
 
-    @Bean
-    public PlatformTransactionManager txManager() {
-        return new DataSourceTransactionManager(dataSource());
-    }
-
-    @Override
-    public PlatformTransactionManager annotationDrivenTransactionManager() {
-        return txManager();
-    }
 }
